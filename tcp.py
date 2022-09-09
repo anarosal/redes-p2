@@ -1,6 +1,7 @@
 import asyncio
 from tcputils import *
-
+from random import randint
+from time import time
 
 class Servidor:
     def __init__(self, rede, porta):
@@ -75,7 +76,7 @@ class Conexao:
         self.servidor = servidor
         self.id_conexao = id_conexao
         self.callback = None
-        self.timer = asyncio.get_event_loop().call_later(1, self._exemplo_timer)  # um timer pode ser criado assim; esta linha é só um exemplo e pode ser removida
+        self.timer = asyncio.get_event_loop().call_later(1, self._timer)  # um timer pode ser criado assim; esta linha é só um exemplo e pode ser removida
         #self.timer.cancel()   # é possível cancelar o timer chamando esse método; esta linha é só um exemplo e pode ser removida
         self.seq_no = None
         self.ack_no = None
@@ -119,7 +120,7 @@ class Conexao:
 
         # Se for flag ACK, encerra o timer e remove da lista os pacotes que precisam ser confirmados 
 
-        if (flags & FLAGS_ACK) == FLAGS_ACK and ack_no > slef.seq_no_base:
+        if (flags & FLAGS_ACK) == FLAGS_ACK and ack_no > self.seq_no_base:
             self.seq_no_base = ack_no
 
             if self.pacotes_sem_ack:
@@ -131,10 +132,10 @@ class Conexao:
                     self.timer = asyncio.get_event_loop().call_later(self.timeoutInterval, self._timer)
 
         # pedido para encerrar a conexão 
-        if (flgs & FLAGS_FIN) == FLAGS_FIN:
+        if (flags & FLAGS_FIN) == FLAGS_FIN:
             payload = b''
             self.ack_no += 1
-        elif len(payload) <= 0
+        elif len(payload) <= 0:
             return
 
         # se o pacote é duplicado ou estar fora de ordem
@@ -177,7 +178,7 @@ class Conexao:
 
             payload = dados[begin:end]
 
-            segmento = make_header(src_port, dst_port, self.ack_no, flags)
+            segmento = make_header(src_port, dst_port, self.seq_no, self.ack_no, flags)
             segmento_checksum_corrigido = fix_checksum(segmento+payload, src_addr, dst_addr)
             self.servidor.rede.enviar(segmento_checksum_corrigido, dst_addr)
 
